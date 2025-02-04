@@ -1,0 +1,5 @@
+agenc:
+  recipients: recipients.txt
+  identity: /home/o0th/.ssh/keys.txt
+  files:
+    - examples/secret.yaml

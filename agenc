@@ -1,0 +1,90 @@
+#!/bin/sh
+
+if ! $(type yq > /dev/null); then
+  echo -e "agenc: missing yq (https://github.com/kislyuk/yq)"
+  exit 1
+fi
+
+if ! $(type age > /dev/null); then
+  echo -e "agenc: missing age (https://github.com/FiloSottile/age)"
+  exit 1
+fi
+
+if [ ! -f "./agenc.yaml" ]; then
+  echo -e "agenc: missing agenc.yaml"
+  exit 1
+fi
+
+#
+# help funcion
+#
+
+help() {
+  echo -e "usage: agenc <action>"
+  echo -e "Avaliable actions"
+  echo -e "   help               show this message"
+  echo -e "   version            show script version"
+  echo -e "   encrypt            encrypt all files"
+  echo -e "   decrypt            decrypt all files"
+}
+
+#
+# Getting first argument (lowercase)
+#
+
+action=${1,,}; shift
+
+#
+# Validate first argument
+#
+
+case ${action} in
+  (-v|--version|version)
+    echo -e "agenc/0.1.0"
+    exit 0
+    ;;
+  (-h|--help|help)
+    help
+    exit 0
+    ;;
+  (encrypt|decrypt)
+    ;;
+  (*)
+    help
+	echo -e "Oops: invalid action ($action)"
+    exit 1
+    ;;
+esac
+
+AGENC_FILE="./agenc.yaml"
+RECIPIENTS=$(yq -r ".agenc.recipients" "$AGENC_FILE")
+IDENTITY=$(yq -r ".agenc.identity" "$AGENC_FILE")
+FILES=$(yq -r ".agenc.files[]" "$AGENC_FILE")
+
+if [ ${action} = "encrypt" ]; then
+	for file in $FILES; do
+		echo -e "Encrypting $file"
+		age -R $RECIPIENTS --armor --encrypt -o $file.age $file 
+		if [ "$?" -ne 0 ]; then
+			echo -e "Something went wrong with file $file"
+			exit 1
+		fi
+	done
+
+	echo -e "Done..."
+	exit 0
+fi
+
+if [ ${action} = "decrypt" ]; then
+	for file in $FILES; do
+		echo -e "Decrypting $file"
+		age --identity $IDENTITY --decrypt -o $file $file.age
+		if [ "$?" -ne 0 ]; then
+			echo -e "Something went wrong with file $file"
+			exit 1
+		fi
+	done
+
+	echo -e "Done..."
+	exit 0
+fi
