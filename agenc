@@ -1,5 +1,9 @@
 #!/bin/sh
 
+#
+# Check for dependencies
+#
+
 if ! $(type yq > /dev/null); then
   echo -e "agenc: missing yq (https://github.com/kislyuk/yq)"
   exit 1
@@ -7,11 +11,6 @@ fi
 
 if ! $(type age > /dev/null); then
   echo -e "agenc: missing age (https://github.com/FiloSottile/age)"
-  exit 1
-fi
-
-if [ ! -f "./agenc.yaml" ]; then
-  echo -e "agenc: missing agenc.yaml"
   exit 1
 fi
 
@@ -27,6 +26,29 @@ help() {
   echo -e "   encrypt            encrypt all files"
   echo -e "   decrypt            decrypt all files"
 }
+
+AGENC_FILE="./agenc.yaml"
+
+if [ ! -f "./agenc.yaml" ]; then
+  echo -e "agenc: missing agenc.yaml"
+  exit 1
+fi
+
+RECIPIENTS=$(yq -r ".agenc.recipients" "$AGENC_FILE")
+
+if [ ! -f "$RECIPIENTS" ]; then
+  echo -e "agenc: recipients file doesn't exists"
+  exit 1
+fi
+
+IDENTITY=$(yq -r ".agenc.identity" "$AGENC_FILE")
+
+if [ ! -f "$IDENTITY" ]; then
+  echo -e "agenc: identity file doesn't exists"
+  exit 1
+fi
+
+FILES=$(yq -r ".agenc.files[]" "$AGENC_FILE")
 
 #
 # Getting first argument (lowercase)
@@ -56,10 +78,9 @@ case ${action} in
     ;;
 esac
 
-AGENC_FILE="./agenc.yaml"
-RECIPIENTS=$(yq -r ".agenc.recipients" "$AGENC_FILE")
-IDENTITY=$(yq -r ".agenc.identity" "$AGENC_FILE")
-FILES=$(yq -r ".agenc.files[]" "$AGENC_FILE")
+#
+# Encrypt
+#
 
 if [ ${action} = "encrypt" ]; then
 	for file in $FILES; do
@@ -74,6 +95,10 @@ if [ ${action} = "encrypt" ]; then
 	echo -e "Done..."
 	exit 0
 fi
+
+#
+# Decrypt
+#
 
 if [ ${action} = "decrypt" ]; then
 	for file in $FILES; do
