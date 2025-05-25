@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION="v0.0.1"
+VERSION="v0.0.2"
 
 #
 # Check for dependencies
@@ -36,34 +36,6 @@ help() {
   echo -e "   decrypt            decrypt all files"
 }
 
-AGENC_FILE="./agenc.yaml"
-
-if [ ! -f "./agenc.yaml" ]; then
-  echo -e "agenc: missing agenc.yaml"
-  exit 1
-fi
-
-RECIPIENTS_LIST=$(yq -r ".agenc.recipients[]?" "$AGENC_FILE")
-
-if [ -z "$RECIPIENTS_LIST" ]; then
-  echo -e "agenc: no recipients defined in agenc.yaml"
-  exit 1
-fi
-
-RECIPIENTS=""
-for recipient in $RECIPIENTS_LIST; do
-  RECIPIENTS="$RECIPIENTS --recipient $recipient"
-done
-
-IDENTITY=$(yq -r ".agenc.identity" "$AGENC_FILE")
-eval IDENTITY="$IDENTITY"
-
-if [ ! -f "$IDENTITY" ]; then
-  echo -e "agenc: identity file doesn't exists"
-  exit 1
-fi
-
-FILES=$(yq -r ".agenc.files[]" "$AGENC_FILE")
 
 #
 # Getting first argument (lowercase)
@@ -92,6 +64,37 @@ case ${action} in
     exit 1
     ;;
 esac
+
+if [ "${action}" = "encrypt" ] || [ "${action}" = "decrypt" ]; then
+	AGENC_FILE="./agenc.yaml"
+
+	if [ ! -f "./agenc.yaml" ]; then
+	  echo -e "agenc: missing agenc.yaml"
+	  exit 1
+	fi
+
+	RECIPIENTS_LIST=$(yq -r ".agenc.recipients[]?" "$AGENC_FILE")
+
+	if [ -z "$RECIPIENTS_LIST" ]; then
+	  echo -e "agenc: no recipients defined in agenc.yaml"
+	  exit 1
+	fi
+
+	RECIPIENTS=""
+	for recipient in $RECIPIENTS_LIST; do
+	  RECIPIENTS="$RECIPIENTS --recipient $recipient"
+	done
+
+	IDENTITY=$(yq -r ".agenc.identity" "$AGENC_FILE")
+	eval IDENTITY="$IDENTITY"
+
+	if [ ! -f "$IDENTITY" ]; then
+	  echo -e "agenc: identity file doesn't exists"
+	  exit 1
+	fi
+
+	FILES=$(yq -r ".agenc.files[]" "$AGENC_FILE")
+fi
 
 #
 # Encrypt
