@@ -36,6 +36,23 @@ help() {
   echo -e "   decrypt            decrypt all files"
 }
 
+#
+# update function
+#
+
+update() {
+  API="https://api.github.com/repos/ChocOps/agenc"
+  LATEST_TAG=$(curl -s "$API/tags" | jq -r '.[0].name')
+
+  if [ "$LATEST_TAG" = "$VERSION" ]; then
+    echo -e "agenc: you are using the latest version ($VERSION)"
+    exit 0
+  fi
+
+  RAW="https://raw.githubusercontent.com/ChocOps/agenc/refs/tags/$LATEST_TAG/agenc"
+  sudo curl -s "$RAW" -o /usr/local/bin/agenc
+}
+
 
 #
 # Getting first argument (lowercase)
@@ -56,51 +73,53 @@ case ${action} in
     help
     exit 0
     ;;
-  (encrypt|decrypt|update)
+  (update)
+    update
+    exit 0
+    ;;
+  (encrypt|decrypt)
     ;;
   (*)
     help
-	echo -e "Oops: invalid action ($action)"
+	echo -e "Oops: invalid action (${action})"
     exit 1
     ;;
 esac
 
-if [ "${action}" = "encrypt" ] || [ "${action}" = "decrypt" ]; then
-	AGENC_FILE="./agenc.yaml"
+AGENC_FILE="./agenc.yaml"
 
-	if [ ! -f "./agenc.yaml" ]; then
-	  echo -e "agenc: missing agenc.yaml"
-	  exit 1
-	fi
-
-	RECIPIENTS_LIST=$(yq -r ".agenc.recipients[]?" "$AGENC_FILE")
-
-	if [ -z "$RECIPIENTS_LIST" ]; then
-	  echo -e "agenc: no recipients defined in agenc.yaml"
-	  exit 1
-	fi
-
-	RECIPIENTS=""
-	for recipient in $RECIPIENTS_LIST; do
-	  RECIPIENTS="$RECIPIENTS --recipient $recipient"
-	done
-
-	IDENTITY=$(yq -r ".agenc.identity" "$AGENC_FILE")
-	eval IDENTITY="$IDENTITY"
-
-	if [ ! -f "$IDENTITY" ]; then
-	  echo -e "agenc: identity file doesn't exists"
-	  exit 1
-	fi
-
-	FILES=$(yq -r ".agenc.files[]" "$AGENC_FILE")
+if [ ! -f "./agenc.yaml" ]; then
+  echo -e "agenc: missing agenc.yaml"
+  exit 1
 fi
+
+RECIPIENTS_LIST=$(yq -r ".agenc.recipients[]?" "${AGENC_FILE}")
+
+if [ -z "${RECIPIENTS_LIST}" ]; then
+  echo -e "agenc: no recipients defined in agenc.yaml"
+  exit 1
+fi
+
+RECIPIENTS=""
+for recipient in ${RECIPIENTS_LIST}; do
+  RECIPIENTS="${RECIPIENTS} --recipient ${recipient}"
+done
+
+IDENTITY=$(yq -r ".agenc.identity" "${AGENC_FILE}")
+eval IDENTITY="$IDENTITY"
+
+if [ ! -f "${IDENTITY}" ]; then
+  echo -e "agenc: identity file doesn't exists"
+  exit 1
+fi
+
+FILES=$(yq -r ".agenc.files[]" "${AGENC_FILE}")
 
 #
 # Encrypt
 #
 
-if [ ${action} = "encrypt" ]; then
+if [ "${action}" = "encrypt" ]; then
 	for file in $FILES; do
 		echo -e "Encrypting $file"
 		age $RECIPIENTS --armor --encrypt -o $file.age $file 
@@ -118,7 +137,7 @@ fi
 # Decrypt
 #
 
-if [ ${action} = "decrypt" ]; then
+if [ "${action}" = "decrypt" ]; then
 	for file in $FILES; do
 		echo -e "Decrypting $file"
 		age --identity $IDENTITY --decrypt -o $file $file.age
@@ -132,19 +151,3 @@ if [ ${action} = "decrypt" ]; then
 	exit 0
 fi
 
-#
-# Update
-#
-
-API="https://api.github.com/repos/ChocOps/agenc"
-
-if [ "${action}" = "update" ]; then
-  LATEST_TAG=$(curl -s "$API/tags" | jq -r '.[0].name')
-  if [ "$LATEST_TAG" = "$VERSION" ]; then
-	echo -e "agenc: you are using the latest version ($VERSION)"
-	exit 0
-  fi
-
-  RAW="https://raw.githubusercontent.com/ChocOps/agenc/refs/tags/$LATEST_TAG/agenc"
-  curl -s "$RAW" -o /usr/local/bin/agenc
-fi
