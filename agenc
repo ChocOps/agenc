@@ -5,7 +5,6 @@ VERSION="v0.0.3"
 #
 # Check for dependencies
 #
-#
 
 if ! $(type jq > /dev/null); then
   echo -e "agenc: missing jq (https://github.com/jqlang/jq)"
@@ -41,6 +40,11 @@ help() {
 #
 
 update() {
+  if [ "$(id -u)" -ne 0 ]; then
+    echo -e "agenc: you need to run update with sudo"
+    exit 1
+  fi
+
   API="https://api.github.com/repos/ChocOps/agenc"
   LATEST_TAG=$(curl -s "$API/tags" | jq -r '.[0].name')
 
@@ -49,8 +53,8 @@ update() {
     exit 0
   fi
 
-  RAW="https://raw.githubusercontent.com/ChocOps/agenc/refs/tags/$LATEST_TAG/agenc"
-  sudo curl -s "$RAW" -o /usr/local/bin/agenc
+  RAW="https://raw.githubusercontent.com/ChocOps/agenc/refs/tags/${LATEST_TAG}/agenc"
+  curl -s "$RAW" -o /usr/local/bin/agenc
 }
 
 
