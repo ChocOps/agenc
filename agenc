@@ -1,8 +1,16 @@
 #!/bin/sh
 
+VERSION="v0.0.1"
+
 #
 # Check for dependencies
 #
+#
+
+if ! $(type jq > /dev/null); then
+  echo -e "agenc: missing jq (https://github.com/jqlang/jq)"
+  exit 1
+fi
 
 if ! $(type yq > /dev/null); then
   echo -e "agenc: missing yq (https://github.com/kislyuk/yq)"
@@ -19,6 +27,7 @@ fi
 #
 
 help() {
+  echo -e "agenc $VERSION"
   echo -e "usage: agenc <action>"
   echo -e "Avaliable actions"
   echo -e "   help               show this message"
@@ -68,14 +77,14 @@ action=${1,,}; shift
 
 case ${action} in
   (-v|--version|version)
-    echo -e "agenc/0.1.0"
+    echo -e "agenc/$VERSION"
     exit 0
     ;;
   (-h|--help|help)
     help
     exit 0
     ;;
-  (encrypt|decrypt)
+  (encrypt|decrypt|update)
     ;;
   (*)
     help
@@ -118,4 +127,21 @@ if [ ${action} = "decrypt" ]; then
 
 	echo -e "Done..."
 	exit 0
+fi
+
+#
+# Update
+#
+
+API="https://api.github.com/repos/ChocOps/agenc"
+
+if [ "${action}" = "update" ]; then
+  LATEST_TAG=$(curl -s "$API/tags" | jq -r '.[0].name')
+  if [ "$LATEST_TAG" = "$VERSION" ]; then
+	echo -e "agenc: you are using the latest version ($VERSION)"
+	exit 0
+  fi
+
+  RAW="https://raw.githubusercontent.com/ChocOps/agenc/refs/tags/$LATEST_TAG/agenc"
+  curl -s "$RAW" -o /usr/local/bin/agenc
 fi
