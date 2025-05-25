@@ -34,14 +34,20 @@ if [ ! -f "./agenc.yaml" ]; then
   exit 1
 fi
 
-RECIPIENTS=$(yq -r ".agenc.recipients" "$AGENC_FILE")
+RECIPIENTS_LIST=$(yq -r ".agenc.recipients[]?" "$AGENC_FILE")
 
-if [ ! -f "$RECIPIENTS" ]; then
-  echo -e "agenc: recipients file doesn't exists"
+if [ -z "$RECIPIENTS_LIST" ]; then
+  echo -e "agenc: no recipients defined in agenc.yaml"
   exit 1
 fi
 
+RECIPIENTS=""
+for recipient in $RECIPIENTS_LIST; do
+  RECIPIENTS="$RECIPIENTS --recipient $recipient"
+done
+
 IDENTITY=$(yq -r ".agenc.identity" "$AGENC_FILE")
+eval IDENTITY="$IDENTITY"
 
 if [ ! -f "$IDENTITY" ]; then
   echo -e "agenc: identity file doesn't exists"
@@ -85,7 +91,7 @@ esac
 if [ ${action} = "encrypt" ]; then
 	for file in $FILES; do
 		echo -e "Encrypting $file"
-		age -R $RECIPIENTS --armor --encrypt -o $file.age $file 
+		age $RECIPIENTS --armor --encrypt -o $file.age $file 
 		if [ "$?" -ne 0 ]; then
 			echo -e "Something went wrong with file $file"
 			exit 1

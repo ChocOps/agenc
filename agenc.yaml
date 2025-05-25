@@ -1,5 +1,6 @@
 agenc:
-  recipients: recipients.txt
-  identity: /home/o0th/.ssh/keys.txt
+  recipients:
+    - age1r0nknwaz0prnq8vh5tlja387cz56evrvjskrtvj0d2ldjetqf9eqscelj0
+  identity: ${HOME}/.ssh/keys.txt
   files:
     - examples/secret.yaml
