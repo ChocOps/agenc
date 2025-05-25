@@ -1,6 +1,6 @@
 #!/bin/sh
 
-version="v0.0.5"
+version="v0.0.6"
 
 #
 # Check for dependencies
@@ -53,8 +53,8 @@ update() {
     exit 0
   fi
 
-  RAW="https://raw.githubusercontent.com/ChocOps/agenc/refs/tags/${tag}/agenc"
-  curl -s "$RAW" -o /usr/local/bin/agenc
+  raw="https://raw.githubusercontent.com/ChocOps/agenc/refs/tags/${tag}/agenc"
+  curl -s "${raw}" -o /usr/local/bin/agenc
 }
 
 
