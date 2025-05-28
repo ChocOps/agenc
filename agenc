@@ -84,8 +84,7 @@ case ${action} in
   (encrypt|decrypt)
     ;;
   (*)
-    help
-	echo -e "Oops: invalid action (${action})"
+    echo -e "Oops: invalid action (${action})"
     exit 1
     ;;
 esac
@@ -106,7 +105,7 @@ fi
 
 recipients=""
 for recipient in ${recipients_list}; do
-  RECIPIENTS="${recipients} --recipient ${recipient}"
+  recipients="${recipients} --recipient ${recipient}"
 done
 
 identity=$(yq -r ".agenc.identity" "${agenc_file}")
